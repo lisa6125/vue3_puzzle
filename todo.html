@@ -50,21 +50,11 @@ body {
   float: left;
 }
 .carried {
-  width: 500px;
-  height: 500px;
-  background-color: #fff;
+  width: 498px;
+  height: 498px;
   float: right;
   background-image: url("./bg.jpg");
   position: relative;
-}
-.carried::before{
-  content: "";
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.753);
-  position: absolute;
 }
 .winPage {
   position: fixed;
@@ -93,14 +83,16 @@ body {
   <div id="app">
     <div class="wait">
       <ul>
-        <li v-for="(item, i) in puzzleWait.content" :key="item.idx" @click="handPuzzleActive(item, i)">
-          <img :src="item.url" alt="" />
+        <li v-for="(item,i) in puzzleWait.content" :key="i" @click=handactive(item,i)>
+          <img :src="item.url" alt="">
         </li>
       </ul>
     </div>
     <div class="carried">
       <ul>
-        <li></li>
+        <li v-for="(item,i) in puzzleCarried.content" :key="i" @click=handreset(item,i)>
+          <img :src="item.url" alt="">
+        </li>
       </ul>
     </div>
     <div :class="['winPage', {open: isWin}]">
@@ -117,8 +109,48 @@ body {
         const isWin = ref(false);
         const puzzleWait = reactive({ content: [] });
         const puzzleCarried = reactive({ content: [] });
+        // 判斷位置正確
+          watch(
+            () => puzzleCarried.content,
+            (imgItem) => {
+              Winidx.value = 0;
+              imgItem.forEach((el, idx) => {
+                if (el.idx === idx) {
+                  Winidx.value++;
+                }
+              });
+            },
+            { deep: true }
+          );
 
+          watch(Winidx, (i) => {
+            if (i === 9) {
+              setTimeout(() => {
+                isWin.value = true;
+              }, 500);
+            }
+          });
+        // 點擊動作
+        const handactive = (item,i) => {
+          puzzleCarried.content.push(item);
+          puzzleWait.content.splice(i, 1);
+        }
+        const handreset = (item,i)=>{
+          puzzleWait.content.push(item);
+          puzzleCarried.content.splice(i, 1);
+        }
+        onMounted(()=>{
+          axios.get("./api/puzzle.json").then((res)=>{
+            puzzleWait.content = res.data
+          })
+        })
         return {
+          puzzleWait,
+          puzzleCarried,
+          handactive,
+          handreset,
+          Winidx,
+          isWin
         };
       },
     };
